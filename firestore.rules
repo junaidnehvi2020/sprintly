@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Removed the isUserInRole helper function.
+    // Embedding the logic directly into isAdmin and isManager for explicit clarity.
+
+    function isManager() {
+      // Ensure the user is authenticated first.
+      return request.auth != null &&
+             // Attempt to get the user's role document.
+             get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'Manager';
+    }
+
+    function isAdmin() {
+      // Ensure the user is authenticated first.
+      return request.auth != null &&
+             // Attempt to get the user's role document.
+             get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    // Any signed-in user can read their own role.
+    // Only Admins can create or change roles.
+    match /userRoles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Any authenticated user can read core data.
+    // Only Admins and Managers can write core data.
+    match /{collection}/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (isAdmin() || isManager());
+    }
+
+    // NOTE: If you have a 'settings' collection or others that should have different rules,
+    // you would add separate 'match' blocks for them here.
+    // Example:
+    // match /settings/{docId} {
+    //   allow read, write: if isAdmin();
+    // }
+  }
+}

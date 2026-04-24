@@ -1,0 +1,6 @@
+node_modules/
+.next/
+project_archive.json
+nohup.out
+home/
+src/lib/firebase/studio-SA-file.json
